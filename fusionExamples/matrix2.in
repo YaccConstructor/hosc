@@ -1,0 +1,81 @@
+data List a = Nil | Cons a (List a);
+data Bool = True | False;
+data Tuple3 a b c = T3 a b c;
+data Tuple2 a b = T2 a b;
+data Nat = Z | S Nat;
+
+-- mAdd pls (mask (mAdd pls m1 (mMult pls mlt m1 m2)) msk1 False) m3
+
+
+-- mAdd pls (mAdd pls m4 (mMult pls mlt m1 m2)) m3
+
+--This example is OK
+--mApp pls m1 (mAdd pls m2 m3)
+
+--This example is OK
+--mApp pls (mAdd pls m1 m2) m3
+
+mMult pls mlt (mAdd pls m2 m3) m1
+
+where
+
+eq = \x y -> case x of {Z -> case y of {Z -> True; S q -> False;};
+                        S q -> case y of {Z -> False; S p -> eq q p;}; };
+
+fold = \f c xs -> case xs of {
+	Nil -> c;
+	Cons y ys -> f y (fold f c ys);
+};
+
+filter = \cond l -> fold (\x acc -> case (cond x) of {True -> Cons x acc; False -> acc;}) Nil l;
+
+mAdd = \g m1 m2 -> fold (\x res -> add g x res) m2 m1;
+
+add = 
+ \g x l ->  
+   case l of {
+     Cons y tl -> 
+        case x of {T3 i1 j1 v1 -> 
+          case y of {T3 i2 j2 v2 ->  
+           case (and (eq i1 i2) (eq j1 j2)) of { 
+            True -> Cons (T3 i1 j1 (g v1 v2)) tl ;
+            False -> Cons (T3 i2 j2 v2) (add g x tl); 
+        };
+        };};
+     Nil -> Cons x Nil;
+  }; 
+
+mMult = \g h m1 m2 -> fold (\x res -> fold (\y acc -> add g y acc) res (mult h x m2)) Nil m1;
+
+mult = \h x l -> case x of {
+       T3 i1 j1 v1 -> fold (\y res -> Cons (case y of {T3 i2 j2 v2 -> T3 i1 j2 (h v1 v2);}) res ) 
+                           Nil 
+                           (filter (\y -> case y of {T3 i2 j2 v2 -> eq j1 i2;}) l);
+};
+
+and = \x y -> case x of {
+      False -> False;
+      True -> y;
+};
+
+or = \x y -> case x of {
+      False -> y;
+      True -> True;
+};
+
+not = \x -> case x of {True -> False; False -> True;};
+
+exist = \cond l -> case l of {
+        Nil -> False;
+        Cons x xs -> or (cond x) (exist cond xs); 
+};
+
+help = \x y -> case x of {True -> not y; False -> y;};
+
+mask = \m msk isComplement -> 
+           filter 
+             (\x -> 
+                 case x of {
+                    T3 i1 j1 v1 -> help isComplement (exist (\y -> case y of {T2 i2 j2 -> and (eq i1 i2) (eq j1 j2);}) msk);
+                 }) 
+             m;

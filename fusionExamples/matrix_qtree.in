@@ -1,0 +1,43 @@
+data Nat = Z | S Nat;
+
+data QTree a = None | Val a | Node (QTree a) (QTree a) (QTree a) (QTree a);
+data MaskQTree = MNone | MVal | MNode MaskQTree MaskQTree MaskQTree MaskQTree;
+
+-- mAdd pls (mask (mAdd pls m1 (mMult pls mlt m1 m2)) msk1 False) m3
+
+
+-- mAdd pls (mAdd pls m4 (mMult pls mlt m1 m2)) m3
+
+
+--mAdd pls m1 (mAdd pls m2 m3)
+
+
+--mAdd pls (mAdd pls m1 m2) m3
+
+--mMult pls mlt (mAdd pls m2 m3) m1
+
+mAdd pls m1 (mask (mMult pls mlt m2 m3) msk1)
+
+where
+
+
+mAdd = \g m1 m2 -> case m1 of{
+                      None -> case m2 of {None -> None; Val v -> m2; Node t1 t2 t3 t4 -> m2;};
+                      Val v1 -> case m2 of {None -> m1; Val v -> Val (g v1 v);};
+                      Node q1 q2 q3 q4 -> case m2 of {None -> m1; Node t1 t2 t3 t4 -> Node (mAdd g q1 t1) (mAdd g q2 t2) (mAdd g q3 t3) (mAdd g q4 t4);};
+};
+
+mMult = \g h m1 m2 -> case m1 of{
+                      None -> None;
+                      Val v1 -> case m2 of {None -> None; Val v -> Val (h v1 v);};
+                      Node q1 q2 q3 q4 -> case m2 of {None -> None; Node t1 t2 t3 t4 -> Node (mAdd g (mMult g h q1 t1)(mMult g h q2 t3)) 
+                                                                                             (mAdd g (mMult g h q1 t2)(mMult g h q2 t4)) 
+                                                                                             (mAdd g (mMult g h q3 t1)(mMult g h q4 t3)) 
+                                                                                             (mAdd g (mMult g h q3 t2)(mMult g h q4 t4));};
+};
+
+mask = \m msk -> case m of{
+                      None -> None;
+                      Val v1 -> case msk of {MNone -> None; MVal-> m;};
+                      Node q1 q2 q3 q4 -> case msk of {MNone -> None; MVal -> m; MNode t1 t2 t3 t4 -> Node (mask q1 t1) (mask q2 t2) (mask q3 t3) (mask q4 t4);};
+                      };

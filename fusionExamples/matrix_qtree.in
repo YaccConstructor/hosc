@@ -3,10 +3,10 @@ data Nat = Z | S Nat;
 data QTree a = None | Val a | Node (QTree a) (QTree a) (QTree a) (QTree a);
 data MaskQTree = MNone | MVal | MNode MaskQTree MaskQTree MaskQTree MaskQTree;
 
--- mAdd pls (mask (mAdd pls m1 (mMult pls mlt m1 m2)) msk1 False) m3
+--mAdd pls (mask (mAdd pls m4 (mMult pls mlt m1 m2)) msk1) m3
 
 
--- mAdd pls (mAdd pls m4 (mMult pls mlt m1 m2)) m3
+--mAdd pls (mAdd pls m4 (mMult pls mlt m1 m2)) m3
 
 
 --mAdd pls m1 (mAdd pls m2 m3)
@@ -16,10 +16,16 @@ data MaskQTree = MNone | MVal | MNode MaskQTree MaskQTree MaskQTree MaskQTree;
 
 --mMult pls mlt (mAdd pls m2 m3) m1
 
-mAdd pls m1 (mask (mMult pls mlt m2 m3) msk1)
+-- Problem!!!
+--mAdd pls m1 (mask (mMult pls mlt m2 m3) msk1)
+
+--mAdd pls m1 (mask (mAdd pls m2 m3) msk1)
+
+--mAdd pls (mMult pls mlt m1 m) m1
+
+mMult pls mlt (kron mlt m1 m2) (kron mlt m1 m2)
 
 where
-
 
 mAdd = \g m1 m2 -> case m1 of{
                       None -> case m2 of {None -> None; Val v -> m2; Node t1 t2 t3 t4 -> m2;};
@@ -41,3 +47,14 @@ mask = \m msk -> case m of{
                       Val v1 -> case msk of {MNone -> None; MVal-> m;};
                       Node q1 q2 q3 q4 -> case msk of {MNone -> None; MVal -> m; MNode t1 t2 t3 t4 -> Node (mask q1 t1) (mask q2 t2) (mask q3 t3) (mask q4 t4);};
                       };
+eWizeScalarOp = \g s m -> case m of{
+                         None -> None;
+                         Val v1 -> Val (g v1 s);
+                         Node q1 q2 q3 q4 -> Node (eWizeScalarOp g s q1) (eWizeScalarOp g s q2) (eWizeScalarOp g s q3) (eWizeScalarOp g s q4); 
+};           
+                      
+kron = \g m1 m2 -> case m1 of {
+                        None -> None;
+                        Val v1 -> eWizeScalarOp g v1 m2;
+                        Node q1 q2 q3 q4 -> Node (kron g q1 m2) (kron g q2 m2) (kron g q3 m2) (kron g q4 m2);
+};                     

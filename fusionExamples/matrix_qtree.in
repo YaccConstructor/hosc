@@ -25,7 +25,44 @@ data MaskQTree = MNone | MVal | MNode MaskQTree MaskQTree MaskQTree MaskQTree;
 
 mMult pls mlt (kron mlt m1 m2) (kron mlt m1 m2)
 
+--mAdd pls (kron mlt m1 m2) m3
+
+--mMult pls mlt (kron mlt m1 (Node (Node (Val x) None (Val y) None)
+--                                 None 
+--                                 (Node (Val a) (Val b) None None)
+--                                 (Node None None None (Val c)))) 
+--              (kron mlt m1 (Node (Node (Val x) None (Val y) None)
+--                                 None 
+--                                 (Node (Val a) (Val b) None None)
+--                                 (Node None None None (Val c))))
+
+--mAdd pls      (kron mlt m1 (Node (Node (Val x) None (Val y) None)
+--                                 None 
+--                                 (Node (Val a) (Val b) None None)
+--                                 (Node None None None (Val c)))) 
+--              (kron mlt m1 (Node (Node (Val x) None (Val y) None)
+--                                 None 
+--                                 (Node (Val a) (Val b) None None)
+--                                 (Node None None None (Val c))))
+
+
+--kron mlt (mask (kron mlt m1 m2) msk1) m3
+
+--mAdd pls (mask (kron mlt m1 m2) msk1) m3
+
+--tcStep pls mlt (kron mlt m1 (w1 x y a b c)) 
+
 where
+
+sq = \g h m -> mMult g h m m;
+
+tcStep = \g h m -> mAdd g m (sq g h m);
+
+w1 = \x y a b c ->
+     Node (Node (Val x) None (Val y) None)
+          None 
+          (Node (Val a) (Val b) None None)
+          (Node None None None (Val c));
 
 mAdd = \g m1 m2 -> case m1 of{
                       None -> case m2 of {None -> None; Val v -> m2; Node t1 t2 t3 t4 -> m2;};
@@ -47,6 +84,7 @@ mask = \m msk -> case m of{
                       Val v1 -> case msk of {MNone -> None; MVal-> m;};
                       Node q1 q2 q3 q4 -> case msk of {MNone -> None; MVal -> m; MNode t1 t2 t3 t4 -> Node (mask q1 t1) (mask q2 t2) (mask q3 t3) (mask q4 t4);};
                       };
+                      
 eWizeScalarOp = \g s m -> case m of{
                          None -> None;
                          Val v1 -> Val (g v1 s);

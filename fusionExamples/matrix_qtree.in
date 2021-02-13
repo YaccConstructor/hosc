@@ -1,6 +1,6 @@
 data Nat = Z | S Nat;
 
-data QTree a = None | Val a | Node (QTree a) (QTree a) (QTree a) (QTree a);
+data QTree a = None | Val a | Node (QTree a) (QTree a) (QTree a) (QTree a) | Error;
 data MaskQTree = MNone | MVal | MNode MaskQTree MaskQTree MaskQTree MaskQTree;
 
 --mAdd pls (mask (mAdd pls m4 (mMult pls mlt m1 m2)) msk1) m3
@@ -19,11 +19,12 @@ data MaskQTree = MNone | MVal | MNode MaskQTree MaskQTree MaskQTree MaskQTree;
 -- Problem!!!
 --mAdd pls m1 (mask (mMult pls mlt m2 m3) msk1)
 
+--Cool!
 --mAdd pls m1 (mask (mAdd pls m2 m3) msk1)
 
 --mAdd pls (mMult pls mlt m1 m) m1
 
-mMult pls mlt (kron mlt m1 m2) (kron mlt m1 m2)
+--mMult pls mlt (kron mlt m1 m2) (kron mlt m1 m2)
 
 --mAdd pls (kron mlt m1 m2) m3
 
@@ -50,7 +51,9 @@ mMult pls mlt (kron mlt m1 m2) (kron mlt m1 m2)
 
 --mAdd pls (mask (kron mlt m1 m2) msk1) m3
 
---tcStep pls mlt (kron mlt m1 (w1 x y a b c)) 
+--tcStep pls mlt (kron mlt m1 (w1 x y a b c))
+
+tcStep pls mlt (kron mlt m1 (w2 x y))  
 
 where
 
@@ -64,34 +67,57 @@ w1 = \x y a b c ->
           (Node (Val a) (Val b) None None)
           (Node None None None (Val c));
 
+w2 = \x y -> Node (Val x) None (Val y) None;
+
+
 mAdd = \g m1 m2 -> case m1 of{
-                      None -> case m2 of {None -> None; Val v -> m2; Node t1 t2 t3 t4 -> m2;};
-                      Val v1 -> case m2 of {None -> m1; Val v -> Val (g v1 v);};
-                      Node q1 q2 q3 q4 -> case m2 of {None -> m1; Node t1 t2 t3 t4 -> Node (mAdd g q1 t1) (mAdd g q2 t2) (mAdd g q3 t3) (mAdd g q4 t4);};
+                      Error -> Error;
+                      None -> case m2 of {Error -> Error; 
+                                          None -> None; 
+                                          Val v -> m2; 
+                                          Node t1 t2 t3 t4 -> m2;};
+                      Val v1 -> case m2 of {Error -> Error; 
+                                            None -> m1; 
+                                            Val v -> Val (g v1 v); 
+                                            Node t1 t2 t3 t4 -> Error;};
+                      Node q1 q2 q3 q4 -> case m2 of {Error -> Error;
+                                                      None -> m1; 
+                                                      Val v -> Error; 
+                                                      Node t1 t2 t3 t4 -> Node (mAdd g q1 t1) (mAdd g q2 t2) (mAdd g q3 t3) (mAdd g q4 t4);};
 };
 
 mMult = \g h m1 m2 -> case m1 of{
+                      Error -> Error;
                       None -> None;
-                      Val v1 -> case m2 of {None -> None; Val v -> Val (h v1 v);};
-                      Node q1 q2 q3 q4 -> case m2 of {None -> None; Node t1 t2 t3 t4 -> Node (mAdd g (mMult g h q1 t1)(mMult g h q2 t3)) 
-                                                                                             (mAdd g (mMult g h q1 t2)(mMult g h q2 t4)) 
-                                                                                             (mAdd g (mMult g h q3 t1)(mMult g h q4 t3)) 
-                                                                                             (mAdd g (mMult g h q3 t2)(mMult g h q4 t4));};
+                      Val v1 -> case m2 of {Error -> Error; 
+                                            None -> None; 
+                                            Val v -> Val (h v1 v); 
+                                            Node t1 t2 t3 t4 -> Error;};
+                      Node q1 q2 q3 q4 -> case m2 of {Error -> Error;
+                                                      None -> None; 
+                                                      Val v -> Error;
+                                                      Node t1 t2 t3 t4 -> Node (mAdd g (mMult g h q1 t1)(mMult g h q2 t3)) 
+                                                                               (mAdd g (mMult g h q1 t2)(mMult g h q2 t4)) 
+                                                                               (mAdd g (mMult g h q3 t1)(mMult g h q4 t3)) 
+                                                                               (mAdd g (mMult g h q3 t2)(mMult g h q4 t4));};
 };
 
 mask = \m msk -> case m of{
+                      Error -> Error;
                       None -> None;
                       Val v1 -> case msk of {MNone -> None; MVal-> m;};
                       Node q1 q2 q3 q4 -> case msk of {MNone -> None; MVal -> m; MNode t1 t2 t3 t4 -> Node (mask q1 t1) (mask q2 t2) (mask q3 t3) (mask q4 t4);};
                       };
                       
 eWizeScalarOp = \g s m -> case m of{
+                         Error -> Error;
                          None -> None;
                          Val v1 -> Val (g v1 s);
                          Node q1 q2 q3 q4 -> Node (eWizeScalarOp g s q1) (eWizeScalarOp g s q2) (eWizeScalarOp g s q3) (eWizeScalarOp g s q4); 
 };           
                       
 kron = \g m1 m2 -> case m1 of {
+                        Error -> Error;
                         None -> None;
                         Val v1 -> eWizeScalarOp g v1 m2;
                         Node q1 q2 q3 q4 -> Node (kron g q1 m2) (kron g q2 m2) (kron g q3 m2) (kron g q4 m2);

@@ -1,5 +1,7 @@
 data Nat = Z | S Nat;
 
+data Bool = True | False;
+
 data QTree a = None | Val a | Node (QTree a) (QTree a) (QTree a) (QTree a) | Error;
 data MaskQTree = MNone | MVal | MNode MaskQTree MaskQTree MaskQTree MaskQTree;
 
@@ -9,18 +11,18 @@ data MaskQTree = MNone | MVal | MNode MaskQTree MaskQTree MaskQTree MaskQTree;
 --mAdd pls (mAdd pls m4 (mMult pls mlt m1 m2)) m3
 
 
---mAdd pls m1 (mAdd pls m2 m3)
+--mAdd isZero pls m1 (mAdd isZero pls m2 m3)
 
 
---mAdd pls (mAdd pls m1 m2) m3
+mAdd isZero pls (mAdd isZero pls m1 m2) m3
 
 --mMult pls mlt (mAdd pls m2 m3) m1
 
 -- Problem!!!
 --mAdd pls m1 (mask (mMult pls mlt m2 m3) msk1)
 
---Cool!
---mAdd pls m1 (mask (mAdd pls m2 m3) msk1)
+--Cool! -> Problem
+--mAdd isZero pls m1 (mask (mAdd isZero pls m2 m3) msk1)
 
 --mAdd pls (mMult pls mlt m1 m) m1
 
@@ -53,13 +55,13 @@ data MaskQTree = MNone | MVal | MNode MaskQTree MaskQTree MaskQTree MaskQTree;
 
 --tcStep pls mlt (kron mlt m1 (w1 x y a b c))
 
-tcStep pls mlt (kron mlt m1 (w2 x y))  
+--tcStep isZero pls mlt (kron isZero mlt m1 (w2 x y))  
 
 where
 
-sq = \g h m -> mMult g h m m;
+sq = \isZ g h m -> mMult isZ g h m m;
 
-tcStep = \g h m -> mAdd g m (sq g h m);
+tcStep = \isZ g h m -> mAdd isZ g m (sq isZ g h m);
 
 w1 = \x y a b c ->
      Node (Node (Val x) None (Val y) None)
@@ -70,55 +72,113 @@ w1 = \x y a b c ->
 w2 = \x y -> Node (Val x) None (Val y) None;
 
 
-mAdd = \g m1 m2 -> case m1 of{
-                      Error -> Error;
-                      None -> case m2 of {Error -> Error; 
-                                          None -> None; 
-                                          Val v -> m2; 
-                                          Node t1 t2 t3 t4 -> m2;};
-                      Val v1 -> case m2 of {Error -> Error; 
-                                            None -> m1; 
-                                            Val v -> Val (g v1 v); 
-                                            Node t1 t2 t3 t4 -> Error;};
-                      Node q1 q2 q3 q4 -> case m2 of {Error -> Error;
-                                                      None -> m1; 
-                                                      Val v -> Error; 
-                                                      Node t1 t2 t3 t4 -> Node (mAdd g q1 t1) (mAdd g q2 t2) (mAdd g q3 t3) (mAdd g q4 t4);};
+reduceTree = \t -> --t;
+    case t of {
+         Error -> Error;
+         Val v -> Val v;
+         None -> None;
+         Node q1 q2 q3 q4 -> 
+            case q1 of {
+                 Node p1 p2 p3 p4 -> t;
+                 Val v1 -> t;
+                 Error -> Error;
+                 None -> case q2 of {
+                              Node r1 r2 r3 r4 -> t;
+                              Val v2 -> t;
+                              Error -> Error;
+                              None -> case q3 of {
+                                           Node y1 y2 y3 y4 -> t;
+                                           Val v3 -> t;
+                                           Error -> Error;
+                                           None -> case q4 of {
+                                                        Node u1 u2 u3 u4 -> t;
+                                                        Val v4 -> t;
+                                                        Error ->  Error;
+                                                        None -> None;
+                                                    };
+                                      };
+                        };
+            };
+    };
+
+mkNode = \isZ x -> case (isZ x) of {True -> None; False -> Val x;}; 
+
+mAdd = \isZ g m1 m2 -> 
+    case m1 of{
+         Error -> Error;
+         None -> case m2 of {Error -> Error; 
+                             None -> None; 
+                             Val v -> m2; 
+                             Node t1 t2 t3 t4 -> m2;};
+         Val v1 -> case m2 of {Error -> Error; 
+                               None -> m1; 
+                               Val v -> mkNode isZ (g v1 v); 
+                               Node t1 t2 t3 t4 -> Error;};
+         Node q1 q2 q3 q4 -> case m2 of {Error -> Error;
+                                         None -> m1; 
+                                         Val v -> Error; 
+                                         Node t1 t2 t3 t4 -> reduceTree (
+                                                               Node (mAdd isZ g q1 t1) 
+                                                                    (mAdd isZ g q2 t2) 
+                                                                    (mAdd isZ g q3 t3) 
+                                                                    (mAdd isZ g q4 t4));};
 };
 
-mMult = \g h m1 m2 -> case m1 of{
-                      Error -> Error;
-                      None -> None;
-                      Val v1 -> case m2 of {Error -> Error; 
-                                            None -> None; 
-                                            Val v -> Val (h v1 v); 
-                                            Node t1 t2 t3 t4 -> Error;};
-                      Node q1 q2 q3 q4 -> case m2 of {Error -> Error;
-                                                      None -> None; 
-                                                      Val v -> Error;
-                                                      Node t1 t2 t3 t4 -> Node (mAdd g (mMult g h q1 t1)(mMult g h q2 t3)) 
-                                                                               (mAdd g (mMult g h q1 t2)(mMult g h q2 t4)) 
-                                                                               (mAdd g (mMult g h q3 t1)(mMult g h q4 t3)) 
-                                                                               (mAdd g (mMult g h q3 t2)(mMult g h q4 t4));};
+mMult = \isZ g h m1 m2 -> 
+    case m1 of {
+         Error -> Error;
+         None -> None;
+         Val v1 -> 
+             case m2 of {
+                  Error -> Error; 
+                  None -> None; 
+                  Val v -> mkNode isZ (h v1 v); 
+                  Node t1 t2 t3 t4 -> Error;
+             };
+         Node q1 q2 q3 q4 -> 
+              case m2 of {
+                   Error -> Error;
+                   None -> None; 
+                   Val v -> Error;
+                   Node t1 t2 t3 t4 -> reduceTree(
+                                          Node (mAdd isZ g (mMult isZ g h q1 t1)(mMult isZ g h q2 t3)) 
+                                               (mAdd isZ g (mMult isZ g h q1 t2)(mMult isZ g h q2 t4)) 
+                                               (mAdd isZ g (mMult isZ g h q3 t1)(mMult isZ g h q4 t3)) 
+                                               (mAdd isZ g (mMult isZ g h q3 t2)(mMult isZ g h q4 t4)));};
 };
 
-mask = \m msk -> case m of{
-                      Error -> Error;
-                      None -> None;
-                      Val v1 -> case msk of {MNone -> None; MVal-> m;};
-                      Node q1 q2 q3 q4 -> case msk of {MNone -> None; MVal -> m; MNode t1 t2 t3 t4 -> Node (mask q1 t1) (mask q2 t2) (mask q3 t3) (mask q4 t4);};
+mask = \m msk ->
+    case m of{
+         Error -> Error;
+         None -> None;
+         Val v1 -> case msk of {MNone -> None; MVal-> m;};
+         Node q1 q2 q3 q4 -> case msk of {
+                                  MNone -> None; 
+                                  MVal -> m; 
+                                  MNode t1 t2 t3 t4 -> 
+                                   reduceTree (Node (mask q1 t1) (mask q2 t2) (mask q3 t3) (mask q4 t4));};
                       };
                       
-eWizeScalarOp = \g s m -> case m of{
-                         Error -> Error;
-                         None -> None;
-                         Val v1 -> Val (g v1 s);
-                         Node q1 q2 q3 q4 -> Node (eWizeScalarOp g s q1) (eWizeScalarOp g s q2) (eWizeScalarOp g s q3) (eWizeScalarOp g s q4); 
+eWizeScalarOp = \isZ g s m -> 
+    case m of{
+         Error -> Error;
+         None -> None;
+         Val v1 -> mkNode isZ (g v1 s);
+         Node q1 q2 q3 q4 -> reduceTree (
+                                Node (eWizeScalarOp isZ g s q1) 
+                                     (eWizeScalarOp isZ g s q2) 
+                                     (eWizeScalarOp isZ g s q3) 
+                                     (eWizeScalarOp isZ g s q4)); 
 };           
                       
-kron = \g m1 m2 -> case m1 of {
-                        Error -> Error;
-                        None -> None;
-                        Val v1 -> eWizeScalarOp g v1 m2;
-                        Node q1 q2 q3 q4 -> Node (kron g q1 m2) (kron g q2 m2) (kron g q3 m2) (kron g q4 m2);
+kron = \isZ g m1 m2 ->
+    case m1 of {
+         Error -> Error;
+         None -> None;
+         Val v1 -> eWizeScalarOp isZ g v1 m2;
+         Node q1 q2 q3 q4 -> reduceTree (
+                               Node (kron isZ g q1 m2) 
+                                    (kron isZ g q2 m2) 
+                                    (kron isZ g q3 m2) 
+                                    (kron isZ g q4 m2));
 };                     

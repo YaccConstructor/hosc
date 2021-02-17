@@ -14,7 +14,7 @@ data MaskQTree = MNone | MVal | MNode MaskQTree MaskQTree MaskQTree MaskQTree;
 --mAdd isZero pls m1 (mAdd isZero pls m2 m3)
 
 
-mAdd isZero pls (mAdd isZero pls m1 m2) m3
+cleanTree (mAdd isZero pls (mAdd isZero pls m1 m2) m3)
 
 --mMult pls mlt (mAdd pls m2 m3) m1
 
@@ -71,57 +71,57 @@ w1 = \x y a b c ->
 
 w2 = \x y -> Node (Val x) None (Val y) None;
 
-reduceTree = \n1 n2 n3 n4 -> 
-    case n1 of {
-         None -> case n2 of {
-                      None -> case n3 of {
-                                   None -> case n4 of {
-                                                None -> None;
-                                                Error -> Error;
-                                                Val v4 -> Node n1 n2 n3 n4;
-                                                Node m1 m2 m3 m4 -> Node n1 n2 n3 n4;
-                                            };
-                                   Error -> Error;
-                                   Val v3 -> Node n1 n2 n3 n4;
-                                   Node l1 l2 l3 l4 -> Node n1 n2 n3 n4;
-                              };
-                      Error -> Error;
-                      Val v2 -> Node n1 n2 n3 n4;
-                      Node k1 k2 k3 k4 -> Node n1 n2 n3 n4;
-                  };
-         Error -> Error;
-         Val v1 -> Node n1 n2 n3 n4;
-         Node j1 j2 j3 j4 -> Node n1 n2 n3 n4; 
-    };
-
---reduceTree = \t -> 
---    case t of {
+reduceTree = \n1 n2 n3 n4 -> Node n1 n2 n3 n4;
+--    case n1 of {
+--         None -> case n2 of {
+--                      None -> case n3 of {
+--                                   None -> case n4 of {
+--                                                None -> None;
+--                                                Error -> Error;
+--                                                Val v4 -> Node n1 n2 n3 n4;
+--                                                Node m1 m2 m3 m4 -> Node n1 n2 n3 n4;
+--                                            };
+--                                   Error -> Error;
+--                                   Val v3 -> Node n1 n2 n3 n4;
+--                                   Node l1 l2 l3 l4 -> Node n1 n2 n3 n4;
+--                              };
+--                      Error -> Error;
+--                      Val v2 -> Node n1 n2 n3 n4;
+--                      Node k1 k2 k3 k4 -> Node n1 n2 n3 n4;
+--                  };
 --         Error -> Error;
---         Val v -> Val v;
---         None -> None;
---         Node q1 q2 q3 q4 -> 
---            case q1 of {
---                 Node p1 p2 p3 p4 -> t;
---                 Val v1 -> t;
---                 Error -> Error;
---                 None -> case q2 of {
---                              Node r1 r2 r3 r4 -> t;
---                              Val v2 -> t;
---                              Error -> Error;
---                              None -> case q3 of {
---                                           Node y1 y2 y3 y4 -> t;
---                                           Val v3 -> t;
---                                           Error -> Error;
---                                           None -> case q4 of {
---                                                        Node u1 u2 u3 u4 -> t;
---                                                        Val v4 -> t;
---                                                        Error ->  Error;
---                                                        None -> None;
---                                                    };
---                                      };
---                        };
---            };
+--         Val v1 -> Node n1 n2 n3 n4;
+--         Node j1 j2 j3 j4 -> Node n1 n2 n3 n4; 
 --    };
+
+cleanTree = \t -> 
+    case t of {
+         Error -> Error;
+         Val v -> Val v;
+         None -> None;
+         Node q1 q2 q3 q4 -> 
+            case (cleanTree q1) of {
+                 Node p1 p2 p3 p4 -> Node p1 p2 p3 p4;
+                 Val v1 -> Val v1;
+                 Error -> Error;
+                 None -> case (cleanTree q2) of {
+                              Node r1 r2 r3 r4 -> Node r1 r2 r3 r4;
+                              Val v2 -> Val v2;
+                              Error -> Error;
+                              None -> case (cleanTree q3) of {
+                                           Node y1 y2 y3 y4 -> Node y1 y2 y3 y4;
+                                           Val v3 -> Val v3;
+                                           Error -> Error;
+                                           None -> case (cleanTree q4) of {
+                                                        Node u1 u2 u3 u4 -> Node u1 u2 u3 u4;
+                                                        Val v4 -> Val v4;
+                                                        Error ->  Error;
+                                                        None -> None;
+                                                    };
+                                      };
+                        };
+            };
+    };
 
 mkNode = \isZ x -> case (isZ x) of {True -> None; False -> Val x;}; 
 

@@ -14,14 +14,24 @@ data MaskQTree = MNone | MVal | MNode MaskQTree MaskQTree MaskQTree MaskQTree;
 --mAdd isZero pls m1 (mAdd isZero pls m2 m3)
 
 
-cleanTree (mAdd isZero pls (mAdd isZero pls m1 m2) m3)
+--cleanTree (mAdd isZero pls (mAdd isZero pls m1 m2) m3)
 
 --mMult pls mlt (mAdd pls m2 m3) m1
+
+-- Example 1. Cool.
+--mask (mAdd isZ1 pls m2 m3) msk1
+
+-- Example 2. Problem.
+mask (mMult isZ1 pls mlt m2 m3) msk1
+
+-- Example 3. ???
+--mask (kron isZ1 pls m2 m3) msk1
+
 
 -- Problem!!!
 --mAdd pls m1 (mask (mMult pls mlt m2 m3) msk1)
 
--- Cool! -> Problem
+--Cool.
 --mAdd isZero pls m1 (mask (mAdd isZero pls m2 m3) msk1)
 
 --mAdd pls (mMult pls mlt m1 m) m1
@@ -70,6 +80,7 @@ w1 = \x y a b c ->
           (Node None None None (Val c));
 
 w2 = \x y -> Node (Val x) None (Val y) None;
+
 
 reduceTree = \n1 n2 n3 n4 -> Node n1 n2 n3 n4;
 --    case n1 of {
@@ -170,15 +181,16 @@ mMult = \isZ g h m1 m2 ->
 };
 
 mask = \m msk ->
-    case m of{
-         Error -> Error;
-         None -> None;
-         Val v1 -> case msk of {MNone -> None; MVal-> m;};
-         Node q1 q2 q3 q4 -> case msk of {
-                                  MNone -> None; 
-                                  MVal -> m; 
-                                  MNode t1 t2 t3 t4 -> 
-                                   reduceTree  (mask q1 t1) (mask q2 t2) (mask q3 t3) (mask q4 t4);};
+    case msk of {
+         MNone -> None; 
+         MVal -> m; 
+         MNode t1 t2 t3 t4 -> 
+               case m of{
+                    Error -> Error;
+                    None -> None;
+                    Val v1 -> Error;
+                    Node q1 q2 q3 q4 -> 
+                         reduceTree (mask q1 t1) (mask q2 t2) (mask q3 t3) (mask q4 t4);};
                       };
                       
 eWizeScalarOp = \isZ g s m -> 
@@ -203,4 +215,4 @@ kron = \isZ g m1 m2 ->
                                     (kron isZ g q2 m2) 
                                     (kron isZ g q3 m2) 
                                     (kron isZ g q4 m2);
-};                     
+};
